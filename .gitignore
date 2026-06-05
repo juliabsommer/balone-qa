@@ -1,0 +1,38 @@
+# Dependências
+node_modules/
+dist/
+
+# Variáveis de ambiente (nunca commitar!)
+.env
+.env.local
+.env.*.local
+
+# Artefatos de teste
+test-results/
+playwright-report/
+allure-results/
+allure-report/
+blob-report/
+
+# Capturas de tela e vídeos gerados
+screenshots/
+videos/
+traces/
+
+# Coverage
+coverage/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Cache TypeScript
+*.tsbuildinfo

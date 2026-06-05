@@ -1,0 +1,165 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Regressão completa toda noite às 02:00 (horário de Brasília = 05:00 UTC)
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Suite de testes'
+        required: false
+        default: 'smoke'
+        type: choice
+        options: [smoke, regression, critical, high, medium, low, accessibility, performance, visual]
+      environment:
+        description: 'Ambiente alvo'
+        required: false
+        default: 'staging'
+        type: choice
+        options: [staging, production]
+
+jobs:
+  # ── Smoke (rápido, em todo PR) ─────────────────────────
+  smoke:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.test_suite == 'smoke')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Smoke Tests
+        run: npm run test:smoke -- --project=chromium
+        env:
+          BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          CI: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ── Critical (main/develop push) ──────────────────────
+  critical:
+    name: Critical Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Run Critical Tests
+        run: npm run test:critical
+        env:
+          BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          CI: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: critical-report
+          path: playwright-report/
+          retention-days: 14
+
+  # ── Regressão com sharding (noturno) ──────────────────
+  regression:
+    name: Regression (${{ matrix.shard }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.test_suite == 'regression')
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Regression Shard ${{ matrix.shard }}/4
+        run: npm run test:shard
+        env:
+          BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_TOTAL: 4
+          CI: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+  # ── Merge de blobs e publicação do relatório ──────────
+  merge-reports:
+    name: Merge & Publish Report
+    needs: regression
+    runs-on: ubuntu-latest
+    if: always() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.test_suite == 'regression'))
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: regression-blob-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge Playwright Reports
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: regression-report-full
+          path: playwright-report/
+          retention-days: 30

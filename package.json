@@ -1,0 +1,41 @@
+{
+  "name": "balone-qa",
+  "version": "1.0.0",
+  "description": "Automação de testes E2E para o e-commerce Brechó Balone",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:critical": "playwright test tests/e2e/critical --project=chromium --retries=2",
+    "test:high": "playwright test tests/e2e/high --project=chromium --project=firefox",
+    "test:medium": "playwright test tests/e2e/medium --project=chromium",
+    "test:low": "playwright test tests/e2e/low --project=chromium",
+    "test:accessibility": "playwright test tests/accessibility --project=chromium",
+    "test:performance": "playwright test tests/performance --project=chromium",
+    "test:visual": "playwright test tests/visual --project=chromium --project=firefox --project=webkit",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:regression": "playwright test --grep @regression",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:shard": "playwright test --shard=$SHARD_INDEX/$SHARD_TOTAL",
+    "report:open": "playwright show-report",
+    "report:allure": "allure serve allure-results",
+    "report:allure:generate": "allure generate allure-results --clean -o allure-report",
+    "codegen": "playwright codegen $BASE_URL",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.1",
+    "allure-playwright": "^3.9.0",
+    "dotenv": "^17.4.2",
+    "typescript": "^6.0.3"
+  }
+}
