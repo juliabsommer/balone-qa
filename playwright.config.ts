@@ -40,25 +40,25 @@ export default defineConfig({
 
   // Configuração base de todos os projetos
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    // Site institucional como base — os testes que precisam do catálogo
+    // usam a URL direta via CatalogoPage.URL
+    baseURL: process.env.BASE_URL || 'https://www.brechobalone.com.br',
 
     // Artefatos
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'retain-on-failure',
 
-    // Navegação
-    navigationTimeout: Number(process.env.NAVIGATION_TIMEOUT) || 60_000,
-    actionTimeout: Number(process.env.ACTION_TIMEOUT) || 10_000,
+    // Navegação — timeouts mais generosos para site externo real
+    navigationTimeout: Number(process.env.NAVIGATION_TIMEOUT) || 30_000,
+    actionTimeout:     Number(process.env.ACTION_TIMEOUT)     || 10_000,
 
     // Localização
-    locale: 'pt-BR',
+    locale:     'pt-BR',
     timezoneId: 'America/Sao_Paulo',
-    geolocation: { longitude: -46.6333, latitude: -23.5505 }, // São Paulo
-    permissions: ['geolocation'],
   },
 
-  // Projetos (browsers + dispositivos móveis)
+  // Projetos — foco em chromium (principal) + mobile
   projects: [
     // ── Desktop ──────────────────────────────────────────
     {
@@ -91,12 +91,6 @@ export default defineConfig({
     {
       name: 'mobile-safari',
       use: { ...devices['iPhone 15'] },
-    },
-
-    // ── Tablet ────────────────────────────────────────────
-    {
-      name: 'tablet',
-      use: { ...devices['iPad (gen 7)'] },
     },
   ],
 

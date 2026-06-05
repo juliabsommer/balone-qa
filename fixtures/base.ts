@@ -1,55 +1,29 @@
 import { test as base, expect } from '@playwright/test';
-import { HomePage }     from '../pages/HomePage';
-import { ProductPage }  from '../pages/ProductPage';
-import { CartPage }     from '../pages/CartPage';
-import { CheckoutPage } from '../pages/CheckoutPage';
-import { SearchPage }   from '../pages/SearchPage';
-import { AuthPage }     from '../pages/AuthPage';
-import { ProfilePage }  from '../pages/ProfilePage';
+import { SitePage }     from '../pages/SitePage';
+import { CatalogoPage } from '../pages/CatalogoPage';
 
-export type BaloneFixtures = {
-  homePage:     HomePage;
-  productPage:  ProductPage;
-  cartPage:     CartPage;
-  checkoutPage: CheckoutPage;
-  searchPage:   SearchPage;
-  authPage:     AuthPage;
-  profilePage:  ProfilePage;
+export type BalonFixtures = {
+  site:     SitePage;
+  catalogo: CatalogoPage;
 };
 
 /**
- * Extensão do test() do Playwright com todos os Page Objects do projeto Balone.
- * Importe este `test` em vez do padrão em todos os spec files.
+ * Extensão do test() com os dois Page Objects do projeto Balonê.
  *
  * @example
- * import { test, expect } from '../fixtures/base';
+ * import { test, expect } from '../../fixtures/base';
  *
- * test('busca retorna resultados', async ({ searchPage }) => {
- *   await searchPage.open('vestido');
- *   await searchPage.assertHasResults();
+ * test('hero visível', async ({ site }) => {
+ *   await site.open();
+ *   await expect(site.heroTagline()).toBeVisible();
  * });
  */
-export const test = base.extend<BaloneFixtures>({
-  homePage: async ({ page }, use) => {
-    await use(new HomePage(page));
+export const test = base.extend<BalonFixtures>({
+  site: async ({ page }, use) => {
+    await use(new SitePage(page));
   },
-  productPage: async ({ page }, use) => {
-    await use(new ProductPage(page));
-  },
-  cartPage: async ({ page }, use) => {
-    await use(new CartPage(page));
-  },
-  checkoutPage: async ({ page }, use) => {
-    await use(new CheckoutPage(page));
-  },
-  searchPage: async ({ page }, use) => {
-    await use(new SearchPage(page));
-  },
-  authPage: async ({ page }, use) => {
-    await use(new AuthPage(page));
-  },
-  profilePage: async ({ page }, use) => {
-    await use(new ProfilePage(page));
+  catalogo: async ({ page }, use) => {
+    await use(new CatalogoPage(page));
   },
 });
 
