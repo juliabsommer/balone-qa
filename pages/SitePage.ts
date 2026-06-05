@@ -54,7 +54,7 @@ export class SitePage extends BasePage {
 
   // ── Seção visite ──────────────────────────────────────────────────────────
   readonly secaoVisite      = () => this.page.locator('#visite');
-  readonly enderecoTexto    = () => this.page.getByText(/Av\. Cel\. Marcos|Coronel Marcos/i);
+  readonly enderecoTexto    = () => this.page.getByText(/Av\. Cel\. Marcos|Coronel Marcos/i).first();
   readonly linkWhatsApp     = () => this.page.locator('a[href*="wa.me"]').first();
   readonly linkMaps         = () => this.page.locator('a[href*="google.com/maps"]').first();
 

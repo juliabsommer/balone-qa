@@ -179,7 +179,8 @@ test.describe('Site institucional — Brechó Balonê', () => {
 
     await test.step('Link WhatsApp presente e com número correto', async () => {
       const href = await site.linkWhatsApp().getAttribute('href');
-      expect(href).toContain('wa.me/5551999580604');
+      // Site usa wa.me com o número da Fê
+      expect(href).toMatch(/wa\.me.*5551999580604/);
     });
 
     await test.step('Link Google Maps presente', async () => {

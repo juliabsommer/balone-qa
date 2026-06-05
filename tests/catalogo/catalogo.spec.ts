@@ -228,7 +228,8 @@ test.describe('Catálogo online — catalogobalone.netlify.app', () => {
       const href = await catalogo.btnEnviarPedido().getAttribute('href');
 
       if (href) {
-        expect(href).toContain('wa.me');
+        // O catálogo usa api.whatsapp.com/send (não wa.me)
+        expect(href).toMatch(/whatsapp\.com|wa\.me/);
         expect(href).toContain('5551999580604');
       } else {
         // Botão sem href — intercepta nova aba/navegação
@@ -238,11 +239,10 @@ test.describe('Catálogo online — catalogobalone.netlify.app', () => {
         ]);
 
         if (newPage) {
-          expect(newPage.url()).toContain('wa.me');
+          expect(newPage.url()).toMatch(/whatsapp\.com|wa\.me/);
           await newPage.close();
         } else {
-          // Navegou na mesma aba
-          await expect(page).toHaveURL(/wa\.me|whatsapp/);
+          await expect(page).toHaveURL(/whatsapp\.com|wa\.me/);
         }
       }
     });
