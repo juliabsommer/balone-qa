@@ -1,0 +1,56 @@
+name: 🧪 Executar Testes
+description: Dispara uma rodada de testes E2E contra o site e o catálogo do Balonê
+title: "[Testes] "
+labels: ["run-tests"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🛍️ Balonê QA — Executar Testes
+
+        Preencha as opções abaixo e clique em **Submit new issue**.
+        O GitHub Actions vai iniciar os testes automaticamente e postar os resultados aqui como comentário. 🎉
+
+        ---
+
+  - type: dropdown
+    id: suite
+    attributes:
+      label: 🎯 Quais testes rodar?
+      description: Escolha o conjunto de testes que deseja executar
+      options:
+        - "🚀 Smoke — só os críticos (rápido, ~1 min)"
+        - "🧭 Jornadas — Ana e Carla ponta a ponta"
+        - "🏠 Site — site institucional completo"
+        - "🛒 Catálogo — catálogo online completo"
+        - "📱 Mobile — responsividade no celular"
+        - "🌐 Todos os testes"
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: 🌐 Navegador
+      options:
+        - "Chrome (Chromium)"
+        - "Firefox"
+        - "Safari (WebKit)"
+        - "Todos os browsers"
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivo
+    attributes:
+      label: 📝 Contexto (opcional)
+      description: Por que está rodando esses testes agora? Teve alguma mudança no site?
+      placeholder: "Ex: A Fê atualizou o catálogo com as peças da nova temporada"
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        > 💡 **Dica:** você também pode disparar os testes a qualquer momento pela aba **[Actions](../../actions/workflows/run-tests.yml)** do repositório, sem precisar abrir uma issue.

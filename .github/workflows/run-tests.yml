@@ -1,0 +1,182 @@
+name: 🧪 Balonê — Executar Testes E2E
+
+on:
+  # ── Disparado pela issue com label "run-tests" ─────────────────────────────
+  issues:
+    types: [opened, labeled]
+
+  # ── Disparado manualmente pela aba Actions ─────────────────────────────────
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Quais testes rodar?"
+        required: true
+        default: "smoke"
+        type: choice
+        options:
+          - smoke
+          - jornadas
+          - site
+          - catalogo
+          - mobile
+          - todos
+      browser:
+        description: "Navegador"
+        required: true
+        default: "chromium"
+        type: choice
+        options:
+          - chromium
+          - firefox
+          - webkit
+          - todos
+
+jobs:
+  # ── Determina os parâmetros do job ─────────────────────────────────────────
+  setup:
+    name: ⚙️ Preparar parâmetros
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'run-tests'))
+    outputs:
+      suite:   ${{ steps.params.outputs.suite }}
+      browser: ${{ steps.params.outputs.browser }}
+      cmd:     ${{ steps.params.outputs.cmd }}
+
+    steps:
+      - name: Resolver parâmetros
+        id: params
+        run: |
+          # Padrões para disparo via issue
+          SUITE="${{ github.event.inputs.suite || 'smoke' }}"
+          BROWSER="${{ github.event.inputs.browser || 'chromium' }}"
+
+          # Montar o comando de acordo com a suite escolhida
+          case "$SUITE" in
+            smoke)    CMD="--grep @smoke --project=$BROWSER" ;;
+            jornadas) CMD="tests/jornadas --project=$BROWSER" ;;
+            site)     CMD="tests/site --project=$BROWSER" ;;
+            catalogo) CMD="tests/catalogo --project=$BROWSER" ;;
+            mobile)   CMD="--project=mobile-chrome --project=mobile-safari" ;;
+            todos)
+              if [ "$BROWSER" = "todos" ]; then
+                CMD="tests/site tests/catalogo tests/jornadas"
+              else
+                CMD="tests/site tests/catalogo tests/jornadas --project=$BROWSER"
+              fi
+              ;;
+          esac
+
+          echo "suite=$SUITE"   >> $GITHUB_OUTPUT
+          echo "browser=$BROWSER" >> $GITHUB_OUTPUT
+          echo "cmd=$CMD"       >> $GITHUB_OUTPUT
+
+  # ── Roda os testes ─────────────────────────────────────────────────────────
+  test:
+    name: 🎭 Playwright — ${{ needs.setup.outputs.suite }} / ${{ needs.setup.outputs.browser }}
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 📦 Instalar dependências
+        run: npm ci
+
+      - name: 🌐 Instalar browsers do Playwright
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: 🧪 Executar testes
+        id: tests
+        run: npx playwright test ${{ needs.setup.outputs.cmd }} --reporter=list,json
+        continue-on-error: true
+        env:
+          CI: true
+
+      - name: 📊 Salvar relatório HTML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ needs.setup.outputs.suite }}-${{ needs.setup.outputs.browser }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: 📋 Ler resultado JSON
+        id: resultado
+        if: always()
+        run: |
+          if [ -f "test-results/results.json" ]; then
+            PASSED=$(cat test-results/results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('stats',{}).get('expected',0))" 2>/dev/null || echo "?")
+            FAILED=$(cat test-results/results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('stats',{}).get('unexpected',0))" 2>/dev/null || echo "?")
+            SKIPPED=$(cat test-results/results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('stats',{}).get('skipped',0))" 2>/dev/null || echo "?")
+            DURATION=$(cat test-results/results.json | python3 -c "import sys,json; d=json.load(sys.stdin); ms=d.get('stats',{}).get('duration',0); print(f'{ms//1000}s')" 2>/dev/null || echo "?")
+          else
+            PASSED="?"; FAILED="?"; SKIPPED="?"; DURATION="?"
+          fi
+          echo "passed=$PASSED"     >> $GITHUB_OUTPUT
+          echo "failed=$FAILED"     >> $GITHUB_OUTPUT
+          echo "skipped=$SKIPPED"   >> $GITHUB_OUTPUT
+          echo "duration=$DURATION" >> $GITHUB_OUTPUT
+
+      - name: 💬 Comentar resultado na issue
+        if: github.event_name == 'issues' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const passed   = '${{ steps.resultado.outputs.passed }}';
+            const failed   = '${{ steps.resultado.outputs.failed }}';
+            const skipped  = '${{ steps.resultado.outputs.skipped }}';
+            const duration = '${{ steps.resultado.outputs.duration }}';
+            const suite    = '${{ needs.setup.outputs.suite }}';
+            const browser  = '${{ needs.setup.outputs.browser }}';
+            const outcome  = '${{ steps.tests.outcome }}';
+            const runUrl   = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const emoji  = outcome === 'success' ? '✅' : '❌';
+            const status = outcome === 'success' ? 'Testes passaram!' : 'Há falhas nos testes.';
+
+            const body = [
+              `## ${emoji} Resultado dos Testes — ${status}`,
+              '',
+              `| | |`,
+              `|---|---|`,
+              `| 🎯 Suite | \`${suite}\` |`,
+              `| 🌐 Browser | \`${browser}\` |`,
+              `| ✅ Passaram | **${passed}** |`,
+              `| ❌ Falharam | **${failed}** |`,
+              `| ⏭️ Pulados | ${skipped} |`,
+              `| ⏱️ Duração | ${duration} |`,
+              '',
+              `📊 **[Ver relatório completo](${runUrl})** — disponível na aba Actions por 14 dias.`,
+              '',
+              failed !== '0' && failed !== '?'
+                ? `> ⚠️ Existem **${failed} teste(s) falhando** — verifique o relatório para detalhes.`
+                : `> 🎉 Todos os testes passaram!`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner:    context.repo.owner,
+              repo:     context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+
+      - name: ✅ / ❌ Resultado final
+        if: always()
+        run: |
+          echo "Suite:   ${{ needs.setup.outputs.suite }}"
+          echo "Browser: ${{ needs.setup.outputs.browser }}"
+          echo "Passou:  ${{ steps.resultado.outputs.passed }}"
+          echo "Falhou:  ${{ steps.resultado.outputs.failed }}"
+          if [ "${{ steps.tests.outcome }}" = "failure" ]; then
+            exit 1
+          fi
