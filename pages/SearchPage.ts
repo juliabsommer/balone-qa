@@ -136,6 +136,13 @@ export class SearchPage extends BasePage {
     return this;
   }
 
+  /** Volta para a página anterior de resultados. */
+  async goToPrevPage(): Promise<this> {
+    await this.paginationPrev().click();
+    await this.loadingSpinner().waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {});
+    return this;
+  }
+
   /** Avança para a próxima página de resultados. */
   async goToNextPage(): Promise<this> {
     await this.paginationNext().click();

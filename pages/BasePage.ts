@@ -1,7 +1,7 @@
 import { Page, Locator, expect, Response } from '@playwright/test';
 
 export abstract class BasePage {
-  constructor(protected readonly page: Page) {}
+  constructor(readonly page: Page) {}
 
   // ── Locators ──────────────────────────────────────────────────────────────
 

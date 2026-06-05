@@ -65,6 +65,7 @@ export class CheckoutPage extends BasePage {
   readonly boletoBarcode       = () => this.getByTestId('boleto-barcode');
   readonly boletoDownload      = () => this.getByTestId('boleto-download-button');
 
+  readonly shippingValue       = () => this.getByTestId('checkout-shipping-value');
   readonly continueToReview    = () => this.getByTestId('continue-to-review');
 
   // ── Locators — Revisão ────────────────────────────────────────────────────
