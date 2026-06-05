@@ -49,8 +49,9 @@ export class SitePage extends BasePage {
 
   // ── Seção sobre ───────────────────────────────────────────────────────────
   readonly secaoSobre       = () => this.page.locator('#sobre');
-  readonly sobre14Anos      = () => this.page.getByText(/14 anos/i);
-  readonly sobre500Pecas    = () => this.page.getByText(/500.*peças|peças.*500/i);
+  // Estrutura: <dt>14</dt><dd>anos de curadoria</dd> — número e label em elementos separados
+  readonly sobre14Anos      = () => this.page.getByText(/anos de curadoria/i);
+  readonly sobre500Pecas    = () => this.page.getByText(/peças por temporada/i);
 
   // ── Seção visite ──────────────────────────────────────────────────────────
   readonly secaoVisite      = () => this.page.locator('#visite');

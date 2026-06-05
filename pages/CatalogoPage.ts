@@ -25,8 +25,8 @@ export class CatalogoPage extends BasePage {
   readonly secaoBoho      = () => this.page.locator('#js-boho-section, [id*="boho"]').first();
 
   // ── Cards de produto ───────────────────────────────────────────────────────
-  /** Todos os cards/itens de produto visíveis na página. */
-  readonly cards         = () => this.page.locator('[class*="product"], [class*="card"], [class*="item"], article').filter({ has: this.page.locator('img') });
+  /** Cards principais de produto. Exclui wrappers internos como card-foto. */
+  readonly cards         = () => this.page.locator('[class*="card"]:not([class*="card-"])').filter({ has: this.page.locator('img') });
 
   // ── Contador e ação ────────────────────────────────────────────────────────
   readonly contadorTexto  = () => this.page.getByText(/peça.*selecionada|nenhuma peça/i);
